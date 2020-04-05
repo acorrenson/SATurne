@@ -38,7 +38,7 @@ Fixpoint propagate (l:literal) (p:problem) : problem :=
   | c::rest =>
     if List.existsb ((lit_eqb) l) c 
     then propagate l rest
-    else (remove_lit l c)::(propagate l rest)
+    else (remove_lit (lit_neg l) c)::(propagate l rest)
   | [] => []
   end.
 
@@ -73,15 +73,6 @@ Proof.
       - apply remove_lit_reduce_size.
       - exact IHp.
 Qed.
-
-(* Lemma propagate_reduce_problem_size_strict: 
-  forall p:problem, forall l:literal, problem_size (propagate l p) < problem_size p.
-Proof.
-  intros.
-  apply Nat.le_neq.
-  split.
-  - apply propagate_reduce_problem_size.
-  -  *)
  
 
 Require Import Recdef.
@@ -91,39 +82,29 @@ Inductive result : Type :=
   | None : result.
 
 
-Function resolve (p:problem) {measure problem_size p} : result  :=
+Function resolve_all (p:problem) {measure problem_size p} : list (list literal) :=
   match p with
-  | nil => Some nil
-  | nil::_ => None
+  | [] => [[]]
+  | []::_ => []
   | (l::c)::r =>
-    match resolve (propagate l r) with
-    | Some a => Some (l::a)
-    | None =>
-      match resolve (propagate (lit_neg l) (c::r)) with
-      | Some a => Some ((lit_neg l)::a)
-      | None => None
-      end
-    end
-  end.
+    let p1 := (propagate l r) in
+    let p2 := (propagate (lit_neg l) (c::r)) in
+    let s1 := (List.map ((List.cons) l) (resolve_all p1)) in
+    let s2 := (List.map ((List.cons) (lit_neg l)) (resolve_all p2)) in
+    List.concat [s1; s2]
+    end.
 Proof.
   + intros.
-    simpl. destruct existsb.
-    - cut (problem_size (propagate (lit_neg l) r) <= problem_size r ).
-      * intros. 
-        apply le_lt_n_Sm.
-        rewrite plus_comm. rewrite <- le_plus_trans.
-        -- apply H.
-        -- auto.
-      * apply propagate_reduce_problem_size.
-    - simpl. apply le_lt_n_Sm.
-      rewrite plus_comm.
-      replace (length c + problem_size r) with (problem_size r + length c) by (apply plus_comm).
-      rewrite Nat.add_le_mono.
+    simpl.
+    destruct existsb;apply le_lt_n_Sm.
+    ++ rewrite plus_comm; apply le_plus_trans; apply propagate_reduce_problem_size.
+    ++ simpl. rewrite Nat.add_le_mono.
       * auto.
-      * apply propagate_reduce_problem_size.
       * apply remove_lit_reduce_size.
+      * apply propagate_reduce_problem_size.
   + intros.
-    simpl. apply le_lt_n_Sm.
-    rewrite plus_comm; apply le_plus_trans.
-    apply propagate_reduce_problem_size.
-Qed.
+    simpl.
+    apply le_lt_n_Sm; rewrite plus_comm; apply le_plus_trans; apply propagate_reduce_problem_size.
+Defined.
+
+
