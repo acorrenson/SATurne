@@ -1,3 +1,19 @@
+(****************************************************
+
+                    ,MMM8&&&.
+                _..MMMMM88&&&&..._
+            .::'''MMMMM88&&&&&&'''::.
+           ::     MMMMM88&&&&&&     ::
+           '::....MMMMM88&&&&&&....::'
+              `''''MMMMM88&&&&''''`
+                    'MMM8&&&'
+
+                     SATurn
+                ----------------
+             A tiny verified solver
+
+****************************************************)
+
 Require Import Arith.
 Require Import Coq.Lists.List.
 Import ListNotations.
@@ -229,19 +245,3 @@ Proof.
       * apply eval_weak in H0. exact H0.
     ++ simpl eval.
       rewrite eval_clause_weak.
-        
-
-(* intros.
-induction p.
-+ auto.
-+ simpl propagate.
-  destruct existsb eqn: A.
-  ++ rewrite IHp.
-      * auto.
-      * apply eval_weak in H. exact H.
-  ++ apply eval_or.
-  
-  simpl. auto. destruct eval_clause eqn:E.
-    * apply eval_weak in H.
-      apply IHp. exact H.
-    * auto. *)
