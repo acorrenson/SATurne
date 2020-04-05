@@ -1,159 +1,120 @@
-Require Import Coq.Lists.ListSet.
-Require Import ZArith.
+Require Import Arith.
 Require Import Coq.Lists.List.
-
 Import ListNotations.
 
-Inductive literal : Type := P (n:nat) | N (n:nat).
+(** Type Literal *)
+Inductive literal : Type := 
+  P (n:nat) | N (n:nat).
 
-(** Equality of literals is decidable *)
-Definition lit_eq_dec : forall x y:literal, { x = y } + { x <> y}.
-Proof.
-  decide equality.
-  + decide equality.
-  + decide equality.
-Defined.
+(** Literals boolean equality *)
+Fixpoint lit_eqb u v :=
+  match u, v with
+  | P a, P b | N a, N b => a =? b
+  | _, _ => false
+  end.
 
-Notation clause := (set literal).
-
-(** Equality of clauses is decidable *)
-Definition cl_eq_dec : forall x y: clause, { x = y } + { x <> y}.
-Proof.
-  decide equality.
-  apply lit_eq_dec.
-Defined.
-
-Notation problem := (set clause).
-
-Fixpoint negate l:literal :=
+(** Literals negation *)
+Fixpoint lit_neg l :=
   match l with
   | P n => N n
   | N n => P n
   end.
 
-Fixpoint propagate (l:literal) (p:problem) : problem := 
+(** Type alias for clauses *)
+Definition clause : Type := list literal.
+
+(** Type alias for SAT problem *)
+Definition problem : Type := list clause.
+
+(** Remove a literal from a clause *)
+Fixpoint remove_lit l c :=
+  match c with
+  | x::rest =>
+    if lit_eqb x l
+    then rest
+    else x::(remove_lit l rest)
+  | [] => []
+  end.
+
+(** Simplify a problem by propagating a literal *)
+Fixpoint propagate (l:literal) (p:problem) : problem :=
   match p with
   | c::rest =>
-    if set_mem lit_eq_dec l c
-    then propagate l rest 
-    else set_add cl_eq_dec (set_remove lit_eq_dec (negate l) c) (propagate l rest)
-  | nil => nil
+    if List.existsb ((lit_eqb) l) c 
+    then propagate l rest
+    else (remove_lit (lit_neg l) c)::(propagate l rest)
+  | [] => []
   end.
 
-Fixpoint lit_eq l1 l2 :=
-  match l1, l2 with
-  | P a, P b 
-  | N a, N b => Nat.eqb a b
-  | _, _ => false
+(** Naive size of a problem (number of literals) *)
+Fixpoint problem_size (p:problem) :=
+  match p with
+  | c::rest => length c + problem_size rest
+  | [] => 0
   end.
 
-Fixpoint lit_neq l1 l2 := negb (lit_eq l1 l2).
-
-Fixpoint propagate2 (l:literal) (p:problem) : problem :=
-  let notIn x s := (List.forallb (lit_neq x) s) in
-  List.map (List.filter (lit_neq (negate l))) (List.filter (notIn l) p).
-
-Example trivial_propagation : propagate2 (P 0) ([[P 0]]) = [].
-  auto.
+(** Removing a literal from a clause reduces its size *)
+Lemma remove_lit_reduce_size :
+  forall l:literal, forall c:clause, length (remove_lit l c) <= length c.
+Proof.
+  intros.
+  induction c.
+  + auto.
+  + simpl.
+    destruct (lit_eqb a l).
+    - auto.
+    - simpl. apply le_n_S. exact IHc.
 Qed.
 
-Example unsat_propagation : propagate2 (P 0) ([[N 0]]) = [[]].
-  auto.
+(** Simplyfing a problem by propatation of a literal reduces its size *)
+Lemma propagate_reduce_problem_size: 
+  forall p:problem, forall l:literal, problem_size (propagate l p) <= problem_size p.
+Proof.
+  intros.
+  induction p.
+  + auto.
+  + simpl.
+    destruct existsb.
+    * rewrite IHp. rewrite plus_comm. apply le_plus_l.
+    * simpl. apply Nat.add_le_mono.
+      - apply remove_lit_reduce_size.
+      - exact IHp.
 Qed.
-
-Notation assignment := (set literal).
-
-Inductive result : Type :=
-  | Some (a : assignment)
-  | None.
+ 
 
 Require Import Recdef.
 
-Check set_fold_left.
+Definition assignment : Type := list literal.
+Definition solutions : Type := list assignment.
 
-Definition nb_literals (p:problem) := 
-  let all := set_fold_left (set_union lit_eq_dec) p (empty_set literal) in
-  length all.
 
-Fixpoint nb_literals2  (p:problem) := 
+(** Solve a problem *)
+Function resolve_all (p:problem) {measure problem_size p} : solutions :=
   match p with
-  | c::r => length c + (nb_literals2 r)
-  | nil => 0
-  end.
-  
-
-(* Definition problem_length (p:problem) := 2 ^ (nb_literals p) - length p. *)
-
-Lemma propagate_conserve_order : 
-  forall u v : problem, lel u v -> forall l, nb_literals2 (propagate2 l u) <= nb_literals2 (propagate2 l u).
-Proof.
-  auto.
-Qed.
-
-Lemma empty_propagate : forall l, forall p, nb_literals2 (propagate2 l ([] :: p)) = nb_literals2 ([] :: p).
-Proof.
-  intros.
-  simpl.
-  induction p.
-  + simpl. induction l; auto.
-  + simpl. induction l.
-    * unfold propagate2. simpl map.
-
-Lemma propagate_decrease :
-  forall l:literal, forall p:problem, nb_literals (propagate2 l p) <= nb_literals p.
-Proof.
-  intros.
-  induction p.
-  induction l.
-  + auto.
-  + auto.
-  + induction a. 
-    * intros. rewrite H. auto.
-    * intros. cut (forall l, forall p, nb_literals (propagate2 l ([] :: p)) = nb_literals ([] :: p)).
-      - intros.
-  
-  (* induction a.
-    - cut (forall q : problem, nb_literals ([] :: q) = nb_literals q).
-     * intros. symmetry in H. rewrite <- H. *)
-
-Function resolve (p:problem) {measure problem_length p} : result  :=
-  match p with
-  | nil => Some nil
-  | nil::_ => None
+  | [] => [[]]
+  | []::_ => []
   | (l::c)::r =>
-    match resolve (propagate l r) with
-    | Some a => Some (l::a)
-    | None =>
-      match resolve (propagate (negate l) (c::r)) with
-      | Some a => Some ((negate l)::a)
-      | None => None
-      end
-    end
-  end.
+    let p1 := (propagate l r) in
+    let p2 := (propagate (lit_neg l) (c::r)) in
+    let s1 := (List.map ((List.cons) l) (resolve_all p1)) in
+    let s2 := (List.map ((List.cons) (lit_neg l)) (resolve_all p2)) in
+    List.concat [s1; s2]
+    end.
 Proof.
-  + intros.
-    simpl.
-
-(* Fixpoint resolve (p:problem) : result :=
-  match p with
-  | nil => Some nil
-  | nil::_ => None
-  | (l::c)::r =>
-    match resolve (propagate l r) with
-    | Some a => Some (l::a)
-    | None =>
-      match resolve (propagate (negate l) (c::r)) with
-      | Some a => Some ((negate l)::a)
-      | None => None
-      end
-    end
-  end. *)
+  + intros; simpl; apply le_lt_n_Sm; destruct existsb; simpl.
+    ++ rewrite plus_comm; apply le_plus_trans; apply propagate_reduce_problem_size.
+    ++ rewrite Nat.add_le_mono.
+      * auto.
+      * apply remove_lit_reduce_size.
+      * apply propagate_reduce_problem_size.
+  + intros; simpl; apply le_lt_n_Sm; rewrite plus_comm; apply le_plus_trans; apply propagate_reduce_problem_size.
+Defined.
 
 
 Fixpoint eval_clause (c:clause) (a:assignment) : bool :=
   match c with
   | l::rest =>
-    if set_mem lit_eq_dec l a
+    if List.existsb (lit_eqb l) a
     then true
     else eval_clause rest a
   | nil => false
@@ -170,7 +131,6 @@ Fixpoint eval (p:problem) (a:assignment) : bool :=
 
 
 Definition sat (p:problem) := exists a:assignment, eval p a = true.
-
 
 Definition unsat (p : problem) := not (sat p).
 
@@ -195,3 +155,4 @@ Proof.
   exists [].
   reflexivity.
 Qed.
+
