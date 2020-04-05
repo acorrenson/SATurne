@@ -156,3 +156,92 @@ Proof.
   reflexivity.
 Qed.
 
+Lemma eval_weak:
+  forall c:clause, forall p: problem, forall a:assignment,
+    eval (c::p) a = true -> eval p a = true.
+Proof.
+  intros.
+  simpl eval in H.
+  destruct (eval_clause c a) eqn:E1.
+  - exact H.
+  - discriminate H.
+Qed.
+
+Lemma eval_clause_weak: 
+  forall c:clause, forall l:literal, forall a:assignment,
+    eval_clause c a = true -> eval_clause (l::c) a = true.
+Proof.
+  intros.
+  induction c.
+  + discriminate H.
+  + simpl.
+    destruct existsb eqn:A.
+    - reflexivity.
+    - auto.
+Qed.
+
+Lemma eval_or:
+  forall c:clause, forall p:problem, forall a:assignment,
+    eval (c::p) a = true -> eval_clause c a = true \/ eval p a = true.
+Proof.
+  intros.
+  - destruct (eval_clause c a) eqn: A.
+    + auto.
+    + right.
+      apply eval_weak in H. exact H.
+Qed.
+
+Fixpoint wf_clause (p:clause) :=
+  match p with
+  | [] => True
+  | l::rest =>
+    if List.existsb (lit_eqb l) rest then False
+    else if List.existsb (lit_eqb (lit_neg l)) rest then False
+    else wf_clause rest
+    end.
+
+Fixpoint wf_problem (p:problem) :=
+  match p with
+  | [] => True
+  | c::rest => (wf_clause c) /\ (wf_problem rest)
+  end.
+
+Lemma wf_p_c :
+  forall p:problem, forall c:clause,
+    wf_problem (c::p) -> wf_clause c.
+Proof.
+  intros.
+  + simpl wf_problem in H.
+    apply H.
+Qed.
+
+Lemma propagate_coherence :
+  forall p:problem, forall a:assignment, forall l:literal, wf_problem p -> eval p a = true -> eval (propagate l p) a = true.
+Proof.
+  intros.
+  induction p.
+  + simpl; reflexivity.
+  + simpl propagate.
+    destruct existsb eqn:A.
+    ++ rewrite IHp.
+      * auto.
+      * apply H.
+      * apply eval_weak in H0. exact H0.
+    ++ simpl eval.
+      rewrite eval_clause_weak.
+        
+
+(* intros.
+induction p.
++ auto.
++ simpl propagate.
+  destruct existsb eqn: A.
+  ++ rewrite IHp.
+      * auto.
+      * apply eval_weak in H. exact H.
+  ++ apply eval_or.
+  
+  simpl. auto. destruct eval_clause eqn:E.
+    * apply eval_weak in H.
+      apply IHp. exact H.
+    * auto. *)
