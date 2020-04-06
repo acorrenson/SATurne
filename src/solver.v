@@ -124,27 +124,44 @@ Proof.
       * apply remove_lit_reduce_size.
       * apply propagate_reduce_problem_size.
   + intros; simpl; apply le_lt_n_Sm; rewrite plus_comm; apply le_plus_trans; apply propagate_reduce_problem_size.
-Defined.
+Qed.
 
 
 Fixpoint eval_clause (c:clause) (a:assignment) : bool :=
   match c with
   | l::rest =>
-    if List.existsb (lit_eqb l) a
-    then true
-    else eval_clause rest a
+    List.existsb (lit_eqb l) a || eval_clause rest a
   | nil => false
   end.
 
 Fixpoint eval (p:problem) (a:assignment) : bool :=
   match p with
   | c::rest =>
-    if eval_clause c a
-    then eval rest a
-    else false
+    eval_clause c a && eval rest a
   | nil => true
   end.
 
+Lemma existsb_nil:
+  forall A, forall l:list A, forall f:(A -> bool), l = [] -> existsb f l = false.
+Proof.
+  intros.
+  rewrite H.
+  auto.
+Qed.
+
+Lemma eval_clause_in_nil:
+  forall c:clause, forall a:assignment,
+    a = nil -> eval_clause c a = false.
+Proof.
+  intros.
+  induction c.
+  + auto.
+  + simpl.
+    apply Bool.orb_false_iff.
+    split.
+    ++ apply existsb_nil. exact H.
+    ++ exact IHc.
+Qed. 
 
 Definition sat (p:problem) := exists a:assignment, eval p a = true.
 
@@ -207,6 +224,22 @@ Proof.
       apply eval_weak in H. exact H.
 Qed.
 
+Lemma eval_and:
+  forall c:clause, forall p:problem, forall a:assignment,
+    eval (c::p) a = true -> eval_clause c a = true /\ eval p a = true.
+Proof.
+  intros.
+  - destruct eval_clause eqn: A.
+    + split.
+      ++ auto.
+      ++ rewrite eval_weak with c p a; auto.
+    + simpl in H.
+      rewrite Bool.andb_true_iff in H.
+      contradict A.
+      apply Bool.not_false_iff_true.
+      apply H.
+Qed.
+
 Fixpoint wf_clause (p:clause) :=
   match p with
   | [] => True
@@ -231,6 +264,55 @@ Proof.
     apply H.
 Qed.
 
+
+Lemma solve_all_empty:
+  forall p:problem, resolve_all ([]::p) = [].
+Proof.
+  intros.
+  induction p.
+  ++ apply resolve_all_terminate.
+
+
+
+Lemma solve_all_correctness_1 :
+  forall p:problem, unsat p -> In [] (resolve_all p).
+Proof.
+  intros.
+  induction p.
+  + simpl. auto.
+  + induction a.
+    ++ assert (resolve_all ([] :: p) = [[]]).
+      +++ simpl.
+
+
+
+Lemma solve_all_correctness:
+  forall p:problem, forall a:assignment, In a (resolve_all p) -> eval p a = true.
+Proof.
+  intros.  
+  induction p.
+  + auto.
+  + simpl.
+    induction a.
+    ++ rewrite eval_clause_in_nil.
+
+    
+  
+  unfold resolve_all in H.
+
+    Check (resolve_all_ind).
+
+    assert (In a (resolve_all p)).
+    ++ apply solve_all_weak in H; exact H.
+    ++ apply IHp in H0.
+      apply (Bool.andb_true_iff).
+      split.
+      +++
+
+
+
+
+
 Lemma propagate_coherence :
   forall p:problem, forall a:assignment, forall l:literal, wf_problem p -> eval p a = true -> eval (propagate l p) a = true.
 Proof.
@@ -243,5 +325,5 @@ Proof.
       * auto.
       * apply H.
       * apply eval_weak in H0. exact H0.
-    ++ simpl eval.
-      rewrite eval_clause_weak.
+    ++ apply eval_and in H0.
+      auto.
