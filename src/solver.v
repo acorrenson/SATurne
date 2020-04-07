@@ -23,9 +23,8 @@ Require Import Recdef.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
-Add LoadPath "./src".
-Require Import Sat.
-Require Import Evaluation.
+Require Import Src.Sat.
+Require Import Src.Evaluation.
 
 (** Remove a literal from a clause *)
 Fixpoint remove_lit l c :=

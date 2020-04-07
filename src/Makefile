@@ -21,7 +21,7 @@ all: ${VOS}
 
 %.vo: %.v
 	@ echo "Compiling $<"
-	@ coqc $< -o $@
+	@ coqc -R ./ Src $< -o $@
 
 clean:
 	@ rm -f ${VOS}
