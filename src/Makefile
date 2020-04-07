@@ -8,7 +8,7 @@
 #              `''''MMMMM88&&&&''''`                 #
 #                    'MMM8&&&'                       #
 #                                                    #
-#                     SATurn                         #
+#                     SATurne                        #
 #                ----------------                    #
 #             A tiny verified solver                 #
 #                                                    #
