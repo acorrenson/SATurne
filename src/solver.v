@@ -30,11 +30,11 @@ Require Import Evaluation.
 (** Remove a literal from a clause *)
 Fixpoint remove_lit l c :=
   match c with
+  | [] => []
   | x::rest =>
     if lit_eqb x l
     then rest
     else x::(remove_lit l rest)
-  | [] => []
   end.
 
 (** Simplify a problem by propagating a literal *)
@@ -81,7 +81,8 @@ Proof.
       - apply remove_lit_reduce_size.
       - exact IHp.
 Qed.
- 
+
+(** Solutions to a SAT problem *)
 Definition solutions : Type := list assignment.
 
 (** Resolution algorithm *)

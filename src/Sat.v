@@ -24,7 +24,6 @@ Require Import Lists.List.
 Require Import Evaluation.
 Import ListNotations.
 
-
 (** Problem satisfiability *)
 Definition sat (p:problem) : Prop :=
   exists (a:assignment), eval p a = true.
@@ -32,6 +31,7 @@ Definition sat (p:problem) : Prop :=
 (** Problem unsatisfiability *)
 Definition unsat (p:problem) : Prop := ~ sat p.
 
+(** The empty problem is satisfiable *)
 Lemma smallest_sat_problem : sat [] .
 Proof.
   unfold sat.
@@ -39,6 +39,7 @@ Proof.
 Qed.
 Hint Resolve smallest_sat_problem.
 
+(** The smallest problem containing the empty clause is unsatisfiable *)
 Lemma smallest_unsat_problem:
   unsat [[]].
 Proof.

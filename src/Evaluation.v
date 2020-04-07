@@ -34,10 +34,10 @@ Definition clause : Type := list literal.
 (** Type problem *)
 Definition problem : Type := list clause.
 
-(** Type problem *)
+(** Type assignment*)
 Definition assignment : Type := list literal.
 
-
+(** Litteral boolean equality *)
 Definition lit_eqb (l1 l2 : literal) :=
   match l1, l2 with
   | Pos u, Pos v 
@@ -45,12 +45,14 @@ Definition lit_eqb (l1 l2 : literal) :=
   | _, _ => false
   end.
 
+(** Litteral negation *)
 Definition lit_neg (l : literal) :=
   match l with
   | Pos u => Neg u
   | Neg u => Pos u
   end.
 
+(** Equivalence of the boolean equality with the standard equality *)
 Lemma lit_eqb_eq:
   forall x y:literal, lit_eqb x y = true <-> x = y.
 Proof.
@@ -67,7 +69,7 @@ Proof.
 Qed.
 Hint Resolve lit_eqb_eq.
 
-
+(** Decidability of the literal boolean equality *)
 Lemma lit_eqb_dec: 
   forall x y:literal, {x = y} + {x <> y}.
 Proof.
@@ -75,6 +77,7 @@ Proof.
 Qed.
 Hint Resolve lit_eqb_dec.
 
+(** A literal is always different from its negation *)
 Lemma lit_eqb_neg_false :
   forall l, lit_eqb (lit_neg l) l = false.
 Proof.
@@ -85,6 +88,7 @@ Proof.
 Qed.
 Hint Resolve lit_eqb_neg_false.
 
+(** Evaluation of a clause for a given assignment *)
 Fixpoint eval_clause (c:clause) (a:assignment) : bool :=
   match c with
   | l::rest =>
@@ -92,6 +96,7 @@ Fixpoint eval_clause (c:clause) (a:assignment) : bool :=
   | nil => false
   end.
 
+(** Evaluation of a problem for a given assignment *)
 Fixpoint eval (p:problem) (a:assignment) : bool :=
   match p with
   | c::rest =>
@@ -99,6 +104,7 @@ Fixpoint eval (p:problem) (a:assignment) : bool :=
   | nil => true
   end.
 
+(** Any clause evaluates to false in the empty context *)
 Lemma eval_clause_nil :
   forall c:clause, eval_clause c [] = false.
 Proof.
