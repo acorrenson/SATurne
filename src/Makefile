@@ -1,0 +1,31 @@
+######################################################
+#                                                    #
+#                    ,MMM8&&&.                       #
+#                _..MMMMM88&&&&..._                  #
+#            .::'''MMMMM88&&&&&&'''::.               #
+#           ::     MMMMM88&&&&&&     ::              #
+#           '::....MMMMM88&&&&&&....::'              #
+#              `''''MMMMM88&&&&''''`                 #
+#                    'MMM8&&&'                       #
+#                                                    #
+#                     SATurn                         #
+#                ----------------                    #
+#             A tiny verified solver                 #
+#                                                    #
+######################################################
+VS = $(wildcard *.v)
+VOS = $(VS:.v=.vo)
+
+.PHONY: all clean mr-proper
+all: ${VOS}
+
+%.vo: %.v
+	@ echo "Compiling $<"
+	@ coqc $< -o $@
+
+clean:
+	@ rm -f ${VOS}
+
+mr-proper: clean
+	@ rm -f .*.aux *.glob
+

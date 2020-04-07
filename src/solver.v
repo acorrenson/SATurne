@@ -14,33 +14,18 @@
 
 ****************************************************)
 
+(***************************************************
+            Module -- Sat Solver
+****************************************************)
+
 Require Import Arith.
+Require Import Recdef.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
-(** Type Literal *)
-Inductive literal : Type := 
-  P (n:nat) | N (n:nat).
-
-(** Literals boolean equality *)
-Fixpoint lit_eqb u v :=
-  match u, v with
-  | P a, P b | N a, N b => a =? b
-  | _, _ => false
-  end.
-
-(** Literals negation *)
-Fixpoint lit_neg l :=
-  match l with
-  | P n => N n
-  | N n => P n
-  end.
-
-(** Type alias for clauses *)
-Definition clause : Type := list literal.
-
-(** Type alias for SAT problem *)
-Definition problem : Type := list clause.
+Add LoadPath "./src".
+Require Import Sat.
+Require Import Evaluation.
 
 (** Remove a literal from a clause *)
 Fixpoint remove_lit l c :=
@@ -55,18 +40,18 @@ Fixpoint remove_lit l c :=
 (** Simplify a problem by propagating a literal *)
 Fixpoint propagate (l:literal) (p:problem) : problem :=
   match p with
+  | [] => []
   | c::rest =>
     if List.existsb ((lit_eqb) l) c 
     then propagate l rest
     else (remove_lit (lit_neg l) c)::(propagate l rest)
-  | [] => []
   end.
 
 (** Naive size of a problem (number of literals) *)
 Fixpoint problem_size (p:problem) :=
   match p with
-  | c::rest => length c + problem_size rest
   | [] => 0
+  | c::rest => length c + problem_size rest
   end.
 
 (** Removing a literal from a clause reduces its size *)
@@ -97,233 +82,33 @@ Proof.
       - exact IHp.
 Qed.
  
-
-Require Import Recdef.
-
-Definition assignment : Type := list literal.
 Definition solutions : Type := list assignment.
 
-
-(** Solve a problem *)
-Function resolve_all (p:problem) {measure problem_size p} : solutions :=
+(** Resolution algorithm *)
+Function resolve (p:problem) {measure problem_size p} : solutions :=
   match p with
   | [] => [[]]
-  | []::_ => []
-  | (l::c)::r =>
-    let p1 := (propagate l r) in
-    let p2 := (propagate (lit_neg l) (c::r)) in
-    let s1 := (List.map ((List.cons) l) (resolve_all p1)) in
-    let s2 := (List.map ((List.cons) (lit_neg l)) (resolve_all p2)) in
-    List.concat [s1; s2]
-    end.
+  | c::pp =>
+    match c with
+    | [] => []
+    | l::cc =>
+      let p1 := propagate l pp in
+      let p2 := propagate (lit_neg l) (cc::pp) in
+      let s1 := (List.map ((List.cons) l) (resolve p1)) in
+      let s2 := (List.map ((List.cons) (lit_neg l)) (resolve p2)) in
+      s1 ++ s2
+    end
+  end.
 Proof.
+  (* Termination Proof *)
   + intros; simpl; apply le_lt_n_Sm; destruct existsb; simpl.
     ++ rewrite plus_comm; apply le_plus_trans; apply propagate_reduce_problem_size.
     ++ rewrite Nat.add_le_mono.
       * auto.
       * apply remove_lit_reduce_size.
       * apply propagate_reduce_problem_size.
-  + intros; simpl; apply le_lt_n_Sm; rewrite plus_comm; apply le_plus_trans; apply propagate_reduce_problem_size.
-Qed.
-
-
-Fixpoint eval_clause (c:clause) (a:assignment) : bool :=
-  match c with
-  | l::rest =>
-    List.existsb (lit_eqb l) a || eval_clause rest a
-  | nil => false
-  end.
-
-Fixpoint eval (p:problem) (a:assignment) : bool :=
-  match p with
-  | c::rest =>
-    eval_clause c a && eval rest a
-  | nil => true
-  end.
-
-Lemma existsb_nil:
-  forall A, forall l:list A, forall f:(A -> bool), l = [] -> existsb f l = false.
-Proof.
-  intros.
-  rewrite H.
-  auto.
-Qed.
-
-Lemma eval_clause_in_nil:
-  forall c:clause, forall a:assignment,
-    a = nil -> eval_clause c a = false.
-Proof.
-  intros.
-  induction c.
-  + auto.
-  + simpl.
-    apply Bool.orb_false_iff.
-    split.
-    ++ apply existsb_nil. exact H.
-    ++ exact IHc.
-Qed. 
-
-Definition sat (p:problem) := exists a:assignment, eval p a = true.
-
-Definition unsat (p : problem) := not (sat p).
-
-Lemma smallest_unsat_problem :
-  unsat [[]].
-Proof.
-  unfold unsat.
-  unfold sat.
-  unfold not.
-  simpl.
-  intro.
-  elim H.
-  intros.
-  discriminate H0.
-Qed.
-
-Lemma smallest_sat_problem :
-  sat [].
-Proof.
-  unfold sat.
-  simpl.
-  exists [].
-  reflexivity.
-Qed.
-
-Lemma eval_weak:
-  forall c:clause, forall p: problem, forall a:assignment,
-    eval (c::p) a = true -> eval p a = true.
-Proof.
-  intros.
-  simpl eval in H.
-  destruct (eval_clause c a) eqn:E1.
-  - exact H.
-  - discriminate H.
-Qed.
-
-Lemma eval_clause_weak: 
-  forall c:clause, forall l:literal, forall a:assignment,
-    eval_clause c a = true -> eval_clause (l::c) a = true.
-Proof.
-  intros.
-  induction c.
-  + discriminate H.
-  + simpl.
-    destruct existsb eqn:A.
-    - reflexivity.
-    - auto.
-Qed.
-
-Lemma eval_or:
-  forall c:clause, forall p:problem, forall a:assignment,
-    eval (c::p) a = true -> eval_clause c a = true \/ eval p a = true.
-Proof.
-  intros.
-  - destruct (eval_clause c a) eqn: A.
-    + auto.
-    + right.
-      apply eval_weak in H. exact H.
-Qed.
-
-Lemma eval_and:
-  forall c:clause, forall p:problem, forall a:assignment,
-    eval (c::p) a = true -> eval_clause c a = true /\ eval p a = true.
-Proof.
-  intros.
-  - destruct eval_clause eqn: A.
-    + split.
-      ++ auto.
-      ++ rewrite eval_weak with c p a; auto.
-    + simpl in H.
-      rewrite Bool.andb_true_iff in H.
-      contradict A.
-      apply Bool.not_false_iff_true.
-      apply H.
-Qed.
-
-Fixpoint wf_clause (p:clause) :=
-  match p with
-  | [] => True
-  | l::rest =>
-    if List.existsb (lit_eqb l) rest then False
-    else if List.existsb (lit_eqb (lit_neg l)) rest then False
-    else wf_clause rest
-    end.
-
-Fixpoint wf_problem (p:problem) :=
-  match p with
-  | [] => True
-  | c::rest => (wf_clause c) /\ (wf_problem rest)
-  end.
-
-Lemma wf_p_c :
-  forall p:problem, forall c:clause,
-    wf_problem (c::p) -> wf_clause c.
-Proof.
-  intros.
-  + simpl wf_problem in H.
-    apply H.
-Qed.
-
-
-Lemma solve_all_empty:
-  forall p:problem, resolve_all ([]::p) = [].
-Proof.
-  intros.
-  induction p.
-  ++ apply resolve_all_terminate.
-
-
-
-Lemma solve_all_correctness_1 :
-  forall p:problem, unsat p -> In [] (resolve_all p).
-Proof.
-  intros.
-  induction p.
-  + simpl. auto.
-  + induction a.
-    ++ assert (resolve_all ([] :: p) = [[]]).
-      +++ simpl.
-
-
-
-Lemma solve_all_correctness:
-  forall p:problem, forall a:assignment, In a (resolve_all p) -> eval p a = true.
-Proof.
-  intros.  
-  induction p.
-  + auto.
-  + simpl.
-    induction a.
-    ++ rewrite eval_clause_in_nil.
-
-    
-  
-  unfold resolve_all in H.
-
-    Check (resolve_all_ind).
-
-    assert (In a (resolve_all p)).
-    ++ apply solve_all_weak in H; exact H.
-    ++ apply IHp in H0.
-      apply (Bool.andb_true_iff).
-      split.
-      +++
-
-
-
-
-
-Lemma propagate_coherence :
-  forall p:problem, forall a:assignment, forall l:literal, wf_problem p -> eval p a = true -> eval (propagate l p) a = true.
-Proof.
-  intros.
-  induction p.
-  + simpl; reflexivity.
-  + simpl propagate.
-    destruct existsb eqn:A.
-    ++ rewrite IHp.
-      * auto.
-      * apply H.
-      * apply eval_weak in H0. exact H0.
-    ++ apply eval_and in H0.
-      auto.
+  + intros; simpl; apply le_lt_n_Sm.
+    rewrite plus_comm.
+    apply le_plus_trans.
+    apply propagate_reduce_problem_size.
+Defined.
