@@ -112,3 +112,9 @@ Proof.
     apply le_plus_trans.
     apply propagate_reduce_problem_size.
 Defined.
+
+Lemma resolve_correct:
+  forall (p:problem) (la:list assignment) (a:assignment),
+    resolve p = la -> List.In a la -> eval p a = true.
+Proof.
+Admitted.

@@ -13,9 +13,6 @@ Coq is a powerful proof-assistant. More than a logical framework to develop proo
 + [x] core algorithm
 + [x] termination proof
 + [ ] correctness proof (this is really not trivial, any help is welcomed :) )
-  - [ ] proving that any result of the solver is correct
-  - [ ] proving that all solutions are given by the solver
-  - [ ] proving that the solver fails if and only if its input problem is not satisfiable.
 
 
 
