@@ -34,13 +34,7 @@ gives
 {{A}, {B}, {C}, {not C, not B}}
 ```
 
-Renaming `A`, `B`, and `C` as `1`, `2` and `3`, it gives the following input for the solver :
-
-```coq
-[[Pos 1]; [Pos 2]; [Pos 3]; [Neg 3; Neg 2]]
-```
-
-We can pass it to the solver
+Renaming `A`, `B`, and `C` as `1`, `2` and `3`, it gives an input for the solver :
 
 ```
 Compute (resolve [[Pos 1]; [Pos 2]; [Pos 3]; [Neg 3; Neg 2]]).
