@@ -118,3 +118,5 @@ Lemma resolve_correct:
     resolve p = la -> List.In a la -> eval p a = true.
 Proof.
 Admitted.
+
+Compute (resolve [[Pos 1]; [Pos 2]; [Pos 3]; [Neg 3; Neg 2]]).
