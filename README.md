@@ -17,6 +17,10 @@ where a `literal` is either `Pos n` or `Neg n` and `n` is of type `nat`.
 Lists of the output describe literals that should be true to solve the problem.
 For instance, the output `[[Pos 1]; [Pos 2]]` means that a solution to the problem is to set the first variable to **true**, and all the others to **false** or to set the second variable to **true** and all the others to **false**.
 
+## Loading the Coq module
+
+The sources are located in the `src` folder. A `_CoqProject` and a makefile are provided. Simply type `make` in the `src` folder and SATurne is ready to be loaded in your favorite Coq editor.
+
 ## An example
 
 Let's consider the following SAT problem :
