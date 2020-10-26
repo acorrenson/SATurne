@@ -113,10 +113,42 @@ Proof.
     apply propagate_reduce_problem_size.
 Defined.
 
-Lemma resolve_correct:
-  forall (p:problem) (la:list assignment) (a:assignment),
-    resolve p = la -> List.In a la -> eval p a = true.
+Lemma resolve_clause:
+  forall c p a,
+  In a (resolve (c :: p)) -> eval_clause c a = true.
+Proof.
+  intros.
+  induction c.
+  - contradiction H.
+  - simpl.
+    apply Bool.orb_true_iff.
+    right.
+    apply IHc.
+Admitted.
+
+Lemma resolve_aff:
+  forall c p a,
+  In a (resolve (c::p)) -> In a (resolve p).
 Proof.
 Admitted.
+
+Lemma resolve_correct:
+  forall (p:problem) (a:assignment),
+  List.In a (resolve p) -> eval p a = true.
+Proof.
+  intros p.
+  induction p; intros.
+  + inversion H; subst.
+    - simpl. reflexivity.
+    - contradiction.
+  + simpl; apply andb_true_intro; split.
+    - induction a.
+      -- contradiction H.
+      -- eapply resolve_clause.
+          apply H.  
+    - apply IHp.
+      eapply resolve_aff.
+      apply H.
+Qed.
 
 Compute (resolve [[Pos 1]; [Pos 2]; [Pos 3]; [Neg 3; Neg 2]]).
