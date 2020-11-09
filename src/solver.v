@@ -54,10 +54,24 @@ Proof.
   - destruct (propagate_variant l pp); lia.
 Defined.
 
+Lemma asg_eq_dec:
+  forall (a1 a2:assignment),
+  {a1 = a2} + {a1 <> a2}.
+Proof.
+  decide equality.
+  apply lit_eqb_dec.
+Qed.
+
 Lemma resolve_invariant_1:
   forall c p a,
   In a (resolve (c :: p)) -> eval_clause c a = true.
 Proof.
+  intros c p asg H.
+  induction c; auto.
+  simpl.
+  apply Bool.orb_true_iff.
+  destruct (in_dec asg_eq_dec asg (resolve (c :: p))).
+  + right. apply (IHc i).
 Admitted.
 
 Lemma resolve_invariant_2:
