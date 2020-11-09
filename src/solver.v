@@ -18,13 +18,13 @@
             Module -- Sat Solver
 ****************************************************)
 
-Require Import Arith.
+Require Import Arith Lia.
 Require Import Recdef.
 Require Import Coq.Lists.List.
 Import ListNotations.
 
-Require Import Src.Sat.
-Require Import Src.Evaluation.
+Require Import SATurn.Sat.
+Require Import SATurn.Evaluation.
 
 (** Remove a literal from a clause *)
 Fixpoint remove_lit l c :=
@@ -84,6 +84,28 @@ Qed.
 (** Solutions to a SAT problem *)
 Definition solutions : Type := list assignment.
 
+(* Function resolve_one (p : problem) {measure problem_size p}:=
+  match p with
+  | [] => Some []
+  | c::pp =>
+    match c with
+    | [] => None
+    | l::cc =>
+      let pb1 := propagate l pp in
+      let pb2 := propagate (lit_neg l) (cc::pp) in
+      match resolve_one pb1 with
+      | Some sol => Some (l::sol)
+      | None     =>
+        match resolve_one pb2 with
+        | Some sol => Some ((lit_neg l)::sol)
+        | None => None
+        end
+      end
+    end
+  end.
+Proof.
+Defined. *)
+
 (** Resolution algorithm *)
 Function resolve (p:problem) {measure problem_size p} : solutions :=
   match p with
@@ -130,6 +152,11 @@ Lemma resolve_aff:
   forall c p a,
   In a (resolve (c::p)) -> In a (resolve p).
 Proof.
+  intros.
+  induction c.
+  - contradiction H.
+  - unfold resolve in H.
+    cbn in H.
 Admitted.
 
 Lemma resolve_correct:
@@ -145,10 +172,8 @@ Proof.
     - induction a.
       -- contradiction H.
       -- eapply resolve_clause.
-          apply H.  
+          apply H.
     - apply IHp.
       eapply resolve_aff.
       apply H.
 Qed.
-
-Compute (resolve [[Pos 1]; [Pos 2]; [Pos 3]; [Neg 3; Neg 2]]).
