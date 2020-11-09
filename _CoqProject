@@ -1,4 +1,5 @@
 -R ./src SATurn
 ./src/Evaluation.v
 ./src/Sat.v
-./src/solver.v
+./src/Solver.v
+./src/Solver_aux.v
