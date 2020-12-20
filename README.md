@@ -26,8 +26,7 @@ The sources are located in the `src` folder. A `_CoqProject` and a makefile are 
 Let's consider the following SAT problem :
 
 ```
-A \/ B
-A \/ C
+A /\ B /\ C
 C -> not B
 ```
 
