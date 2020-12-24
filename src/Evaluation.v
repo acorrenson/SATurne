@@ -67,7 +67,6 @@ Proof.
   + simpl in H; apply (Nat.eqb_eq) in H; auto.
   + elim H; apply (Nat.eqb_eq); reflexivity.
 Qed.
-Hint Resolve lit_eqb_eq.
 
 (** Decidability of the literal boolean equality *)
 Lemma lit_eqb_dec: 
@@ -75,7 +74,6 @@ Lemma lit_eqb_dec:
 Proof.
   decide equality; [apply Nat.eq_dec | apply Nat.eq_dec].
 Qed.
-Hint Resolve lit_eqb_dec.
 
 (** A literal is always different from its negation *)
 Lemma lit_eqb_neg_false :
@@ -86,7 +84,6 @@ Proof.
   + auto.
   + auto.
 Qed.
-Hint Resolve lit_eqb_neg_false.
 
 (** Evaluation of a clause for a given assignment *)
 Fixpoint eval_clause (c:clause) (a:assignment) : bool :=
@@ -113,6 +110,4 @@ Proof.
   + auto.
   + simpl. apply IHc; reflexivity.
 Qed.
-Hint Resolve eval_clause_nil.
-
 
