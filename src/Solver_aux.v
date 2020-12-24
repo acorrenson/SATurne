@@ -54,14 +54,14 @@ Fixpoint problem_size (p:problem) :=
 Lemma remove_lit_variant :
   forall (l : literal), forall (c : clause), length (remove_lit l c) <= length c.
 Proof.
-  induction c as [| l' c IHc]; simpl; auto.
+  induction c as [ | l' c IHc]; simpl; auto.
   destruct (lit_eqb l' l); simpl; lia.
 Qed.
 
 Lemma propagate_variant:
   forall (l : literal) (p : problem), problem_size (propagate l p) <= problem_size p.
 Proof.
-  induction p as [|c p' IHp]; simpl; auto.
+  induction p as [ | c p' IHp]; simpl; auto.
   destruct existsb; simpl; try lia.
   apply Nat.add_le_mono; try lia.
   apply remove_lit_variant.

@@ -26,7 +26,7 @@ Import ListNotations.
 
 (** Problem satisfiability *)
 Definition sat (p:problem) : Prop :=
-  exists (a:assignment), eval p a = true.
+  exists (a:assignment), [| p | a |] = true.
 
 (** Problem unsatisfiability *)
 Definition unsat (p:problem) : Prop := ~ sat p.
@@ -66,14 +66,14 @@ Qed.
 
 Lemma sol_sat:
   forall p a,
-  eval p a = true -> sat p.
+  [| p | a |] = true -> sat p.
 Proof.
   intros p a H. eexists. apply H.
 Qed.
 
 Lemma sat_add_sol:
   forall c p a,
-  eval (c::p) a = true -> eval p a = true.
+  [| c::p | a |] = true -> eval p a = true.
 Proof.
   intros.
   simpl in H.

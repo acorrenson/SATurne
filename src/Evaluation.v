@@ -111,3 +111,4 @@ Proof.
   + simpl. apply IHc; reflexivity.
 Qed.
 
+Notation "[| p | e |]" := (eval p e).
