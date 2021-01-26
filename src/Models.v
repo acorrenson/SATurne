@@ -21,21 +21,23 @@
 
 Require Import Clauses.
 Require Import Sat.
+Require Import Valuations.
 
-Definition model (e : assignment) (p : problem) : Prop :=
-  [| p | e |] = true.
 
-Notation "e '|=a' p" := (model e p) (at level 80).
+Definition model (v : valuation) (p : problem) : Prop :=
+  [| p | v |] = true.
+
+Notation "v '|=v' p" := (model v p) (at level 80).
 
 Definition valid (p : problem) : Prop :=
-  forall e, e |=a p.
+  forall v, v |=v p.
 
 Notation "'|=' p" := (valid p) (at level 80).
 
 Definition consequence (p : problem) (q : problem) : Prop :=
-  forall e, e |=a p -> e |=a q.
+  forall e, e |=v p -> e |=v q.
 
-Notation "p '|=l' q" := (valid p) (at level 80).
+Notation "p '|=l' q" := (consequence p q) (at level 80).
 
 Example test1: valid nil.
 Proof.
@@ -60,7 +62,7 @@ Notation "p ~> q" := (reducible p q) (at level 80).
 
 Example test2: (nil ~> nil).
 Proof.
-  red; split.
-  - red. reflexivity.
-  - exact test1.
+  red; split; red.
+  - reflexivity.
+  - trivial.
 Qed.

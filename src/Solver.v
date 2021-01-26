@@ -54,7 +54,7 @@ Proof.
   - destruct (propagate_variant l pp); lia.
 Defined.
 
-Lemma asg_eq_dec:
+(* Lemma asg_eq_dec:
   forall (a1 a2:assignment),
   {a1 = a2} + {a1 <> a2}.
 Proof.
@@ -97,4 +97,4 @@ Proof.
 Admitted.
 
 
-Compute (resolve [[Pos 1]; [Neg 2; Neg 3]]).
+Compute (resolve [[Pos 1]; [Neg 2; Neg 3]]). *)

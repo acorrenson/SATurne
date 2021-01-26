@@ -1,5 +1,7 @@
 -R ./src SATurn
 ./src/Clauses.v
+./src/Models.v
+./src/Valuations.v
 ./src/Sat.v
 ./src/Solver.v
 ./src/Solver_aux.v

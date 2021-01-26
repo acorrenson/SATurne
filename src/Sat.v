@@ -22,11 +22,12 @@
 Require Import Arith.
 Require Import Lists.List.
 Require Import SATurn.Clauses.
+Require Import SATurn.Valuations.
 Import ListNotations.
 
 (** Problem satisfiability *)
 Definition sat (p:problem) : Prop :=
-  exists (a:assignment), [| p | a |] = true.
+  exists (a : valuation), [| p | a |] = true.
 
 (** Problem unsatisfiability *)
 Definition unsat (p:problem) : Prop := ~ sat p.
@@ -35,7 +36,7 @@ Definition unsat (p:problem) : Prop := ~ sat p.
 Example smallest_sat_problem : sat [] .
 Proof.
   unfold sat.
-  exists []; simpl; reflexivity.
+  exists v_bot; simpl; reflexivity.
 Qed.
 
 (** The smallest problem containing the empty clause is unsatisfiable *)
@@ -65,7 +66,7 @@ Proof.
 Qed.
 
 Lemma model_sat:
-  forall p a,
+  forall p (a : valuation),
   [| p | a |] = true -> sat p.
 Proof.
   intros p a H. eexists. apply H.

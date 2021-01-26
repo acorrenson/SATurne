@@ -29,13 +29,13 @@ Inductive literal : Type :=
   | Neg : nat -> literal.
 
 (** Type clause *)
-Definition clause : Type := list literal.
+Definition clause := (list literal).
 
 (** Type problem *)
-Definition problem : Type := list clause.
+Definition problem := (list clause).
 
 (** Type assignment*)
-Definition assignment : Type := list literal.
+Definition assignment := (list literal).
 
 (** Litteral boolean equality *)
 Definition lit_eqb (l1 l2 : literal) :=
@@ -84,31 +84,3 @@ Proof.
   + auto.
   + auto.
 Qed.
-
-(** Evaluation of a clause for a given assignment *)
-Fixpoint eval_clause (c:clause) (a:assignment) : bool :=
-  match c with
-  | l::rest =>
-    List.existsb (lit_eqb l) a || eval_clause rest a
-  | nil => false
-  end.
-
-(** Evaluation of a problem for a given assignment *)
-Fixpoint eval (p:problem) (a:assignment) : bool :=
-  match p with
-  | c::rest =>
-    eval_clause c a && eval rest a
-  | nil => true
-  end.
-
-(** Any clause evaluates to false in the empty context *)
-Lemma eval_clause_nil :
-  forall c:clause, eval_clause c [] = false.
-Proof.
-  intros.
-  induction c.
-  + auto.
-  + simpl. apply IHc; reflexivity.
-Qed.
-
-Notation "[| p | e |]" := (eval p e).
