@@ -1,3 +1,23 @@
+(****************************************************
+
+                    ,MMM8&&&.
+                _..MMMMM88&&&&..._
+            .::'''MMMMM88&&&&&&'''::.
+           ::     MMMMM88&&&&&&     ::
+           '::....MMMMM88&&&&&&....::'
+              `''''MMMMM88&&&&''''`
+                    'MMM8&&&'
+
+                     SATurne
+                ----------------
+             A tiny verified solver
+
+****************************************************)
+
+(***************************************************
+            Module -- Valuations
+****************************************************)
+
 Require Import Clauses List.
 Import ListNotations.
 
@@ -23,9 +43,9 @@ Fixpoint eval (v : valuation) (p : problem) : bool :=
 
 Notation "[| x | v |]" := (eval v x).
 
-Definition v_bot := fun (_ : nat) => false.
+Definition v_bot : valuation := fun (_ : nat) => false.
 
-Definition v_top := fun (_ : nat) => true.
+Definition v_top : valuation := fun (_ : nat) => true.
 
 Definition substitute (v : valuation) (x : nat) (b : bool) :=
   fun y => if Nat.eqb y x then b else v y.
