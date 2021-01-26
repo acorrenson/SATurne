@@ -21,7 +21,7 @@
 
 Require Import Arith.
 Require Import Lists.List.
-Require Import SATurn.Evaluation.
+Require Import SATurn.Clauses.
 Import ListNotations.
 
 (** Problem satisfiability *)
@@ -32,14 +32,14 @@ Definition sat (p:problem) : Prop :=
 Definition unsat (p:problem) : Prop := ~ sat p.
 
 (** The empty problem is satisfiable *)
-Lemma smallest_sat_problem : sat [] .
+Example smallest_sat_problem : sat [] .
 Proof.
   unfold sat.
   exists []; simpl; reflexivity.
 Qed.
 
 (** The smallest problem containing the empty clause is unsatisfiable *)
-Lemma smallest_unsat_problem:
+Example smallest_unsat_problem:
   unsat [[]].
 Proof.
   unfold unsat.
@@ -52,7 +52,7 @@ Proof.
   discriminate H'.
 Qed.
 
-Lemma sat_aff:
+Lemma sat_clause_decr:
   forall c p, 
   sat (c::p) -> sat p.
 Proof.
@@ -64,16 +64,16 @@ Proof.
   apply H2.
 Qed.
 
-Lemma sol_sat:
+Lemma model_sat:
   forall p a,
   [| p | a |] = true -> sat p.
 Proof.
   intros p a H. eexists. apply H.
 Qed.
 
-Lemma sat_add_sol:
+Lemma model_clause_decr:
   forall c p a,
-  [| c::p | a |] = true -> eval p a = true.
+  [| c::p | a |] = true -> [| p | a |] = true.
 Proof.
   intros.
   simpl in H.

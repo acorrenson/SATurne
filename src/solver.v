@@ -23,7 +23,7 @@ Require Import Coq.Lists.List.
 Import ListNotations.
 
 Require Import SATurn.Sat.
-Require Import SATurn.Evaluation.
+Require Import SATurn.Clauses.
 Require Import SATurn.Solver_aux.
 
 (** Solutions to a SAT problem *)
@@ -96,3 +96,5 @@ Lemma resolve_complete:
 Proof.
 Admitted.
 
+
+Compute (resolve [[Pos 1]; [Neg 2; Neg 3]]).

@@ -19,7 +19,7 @@
 ****************************************************)
 
 Require Import SATurn.Sat.
-Require Import SATurn.Evaluation.
+Require Import SATurn.Clauses.
 Require Import List Lia Arith.
 Import ListNotations.
 
