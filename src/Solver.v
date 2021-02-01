@@ -1,3 +1,4 @@
+
 (****************************************************
 
                     ,MMM8&&&.
@@ -27,10 +28,46 @@ Require Import SATurn.Clauses.
 Require Import SATurn.Solver_aux.
 
 (** Solutions to a SAT problem *)
-Local Definition solutions : Type := list assignment.
+(* Local Definition solutions : Type := list assignment. *)
 
+Definition map (a : option assignment) (f : assignment -> assignment) :=
+  match a with
+  | None => None
+  | Some x => Some (f x)
+  end.
+
+Definition union (a b : option assignment) :=
+  match a with
+  | None => b
+  | Some _ => a
+  end.
+
+Function resolve (clauses : problem) {measure problem_size clauses} : option assignment :=
+  match clauses with
+  | [] => Some []
+  | clause::clauses' =>
+    match clause with
+    | [] => None
+    | lit::clause' =>
+      let space_1 := propagate lit clauses' in
+      let space_2 := propagate (lit_neg lit) (clause'::clauses') in
+      let res1 := resolve space_1 in
+      let res2 := resolve space_2 in
+      union (map res1 (fun x => lit::x))
+            (map res2 (fun x => (lit_neg lit)::x))
+    end
+  end.
+Proof.
+  all: intros clauses clause clauses' lit clause'; simpl.
+  - destruct existsb; simpl.
+    + destruct (propagate_variant (lit_neg lit) clauses'); lia.
+    + destruct  (remove_lit_variant (lit_neg (lit_neg lit)) clause'),
+                (propagate_variant (lit_neg lit) clauses'); lia.
+  - destruct (propagate_variant lit clauses'); lia.
+Defined.
+  
 (** Resolution algorithm *)
-Function resolve (p:problem) {measure problem_size p} : solutions :=
+Function resolve_all (p : problem) {measure problem_size p} : list assignment :=
   match p with
   | [] => [[]]
   | c::pp =>
@@ -39,8 +76,8 @@ Function resolve (p:problem) {measure problem_size p} : solutions :=
     | l::cc =>
       let p1 := propagate l pp in
       let p2 := propagate (lit_neg l) (cc::pp) in
-      let s1 := List.map (List.cons l) (resolve p1) in
-      let s2 := List.map (List.cons (lit_neg l)) (resolve p2) in
+      let s1 := List.map (List.cons l) (resolve_all p1) in
+      let s2 := List.map (List.cons (lit_neg l)) (resolve_all p2) in
       s1 ++ s2
     end
   end.

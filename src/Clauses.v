@@ -69,18 +69,22 @@ Proof.
 Qed.
 
 (** Decidability of the literal boolean equality *)
-Lemma lit_eqb_dec: 
+Lemma lit_eq_dec: 
   forall x y:literal, {x = y} + {x <> y}.
 Proof.
   decide equality; [apply Nat.eq_dec | apply Nat.eq_dec].
+Qed.
+
+Lemma lit_eqb_dec:
+  forall x y:literal, {lit_eqb x y = true} + {lit_eqb x y = false}.
+Proof.
+  intros [ n1 | n1 ] [ n2 | n2 ]; auto; simpl;
+  induction (n1 =? n2); auto.
 Qed.
 
 (** A literal is always different from its negation *)
 Lemma lit_eqb_neg_false :
   forall l, lit_eqb (lit_neg l) l = false.
 Proof.
-  intros.
-  induction l.
-  + auto.
-  + auto.
+  intros []; auto.
 Qed.
