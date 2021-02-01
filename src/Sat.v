@@ -22,12 +22,13 @@
 Require Import Arith.
 Require Import Lists.List.
 Require Import SATurn.Clauses.
+Require Import SATurn.Models.
 Require Import SATurn.Valuations.
 Import ListNotations.
 
 (** Problem satisfiability *)
 Definition sat (p:problem) : Prop :=
-  exists (a : valuation), [| p | a |] = true.
+  exists (a : valuation), a |=v p.
 
 (** Problem unsatisfiability *)
 Definition unsat (p:problem) : Prop := ~ sat p.
@@ -49,7 +50,7 @@ Proof.
   simpl.
   intro H.
   elim H.
-  intros _ H'.
+  intros ? H'.
   discriminate H'.
 Qed.
 
@@ -67,14 +68,14 @@ Qed.
 
 Lemma model_sat:
   forall p (a : valuation),
-  [| p | a |] = true -> sat p.
+  a |=v p -> sat p.
 Proof.
   intros p a H. eexists. apply H.
 Qed.
 
 Lemma model_clause_decr:
   forall c p a,
-  [| c::p | a |] = true -> [| p | a |] = true.
+  a |=v c::p -> a |=v p.
 Proof.
   intros.
   simpl in H.

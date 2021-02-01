@@ -88,3 +88,82 @@ Lemma lit_eqb_neg_false :
 Proof.
   intros []; auto.
 Qed.
+
+Definition clause_eq (c1 c2 : clause) : Prop :=
+  forall (x : literal), In x c1 <-> In x c2.
+
+Fixpoint clause_mem (l : literal) (c : clause) : bool :=
+  match c with
+  | [] => false
+  | l'::c' =>
+    lit_eqb l' l || clause_mem l c'
+  end.
+
+Fixpoint sub_clause (c1 c2 : clause) : bool :=
+  match c1 with
+  | [] => true
+  | l::c1' =>
+    clause_mem l c2 && sub_clause c1' c2
+  end.
+
+(* Lemma sub_clause_in_iff:
+  forall c1 c2, sub_clause c1 c2 = true <-> forall l, In l c1 -> In l c2.
+Proof.
+  intros. split; intros.
+  + inversion H.
+
+
+Definition clause_eqb (c1 c2 : clause) : bool :=
+  sub_clause c1 c2 && sub_clause c2 c1.
+
+Lemma clause_eqb_eq:
+  forall c1 c2, clause_eqb c1 c2 = true <-> clause_eq c1 c2.
+Proof.
+  intros. split. intros.
+  + unfold clause_eqb in H. *)
+
+
+Lemma clause_eqv_dec:
+  forall (c1 c2 : clause), {c1 = c2} + {c1 <> c2}.
+Proof.
+  decide equality.
+  apply lit_eq_dec.
+Qed.
+
+(* Lemma clause_eq_dec:
+  forall (c1 c2 : clause), {clause_eq c1 c2} + {~ (clause_eq c1 c2)}.
+Proof.
+  intros.
+  destruct (in_deb
+Qed. *)
+
+
+Lemma clause_eq_eq:
+  forall (c1 c2 : clause), c1 = c2 -> clause_eq c1 c2.
+Proof.
+  induction c1 as [ | l1 c1' IH1 ];
+  induction c2 as [ | l2 c2' IH2 ]; red; intros.
+  + tauto.
+  + discriminate.
+  + discriminate.
+  + inversion H. tauto.
+Qed.
+
+Definition clause_eqb (c1 c2 : clause) : bool.
+Proof.
+  destruct (clause_eqv_dec c1 c2).
+  + apply true.
+  + apply false.
+Defined.
+
+Lemma clause_eqb_eq:
+  forall (c1 c2 : clause), clause_eqb c1 c2 = true <-> c1 = c2.
+Proof.
+  intros.
+  unfold clause_eqb.
+  destruct (clause_eqv_dec c1 c2).
+  + tauto.
+  + split.
+    - discriminate.
+    - contradiction.
+Qed.
