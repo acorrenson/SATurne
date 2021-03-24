@@ -52,6 +52,10 @@ Definition lit_neg (l : literal) :=
   | Neg u => Pos u
   end.
 
+Lemma lit_neg_twice l :
+  lit_neg (lit_neg l) = l.
+Proof. destruct l; auto. Qed.
+
 (** Equivalence of the boolean equality with the standard equality *)
 Lemma lit_eqb_eq:
   forall x y:literal, lit_eqb x y = true <-> x = y.
@@ -66,6 +70,15 @@ Proof.
   + discriminate H.
   + simpl in H; apply (Nat.eqb_eq) in H; auto.
   + elim H; apply (Nat.eqb_eq); reflexivity.
+Qed.
+
+Lemma lit_eqb_neq l l' : lit_eqb l l' = false <-> l <> l'.
+Proof.
+  split.
+  - intros ? ->. assert (lit_eqb l' l' = true) by now apply lit_eqb_eq.
+    congruence.
+  - intros ?. destruct (lit_eqb l l') eqn:HH; auto. apply lit_eqb_eq in HH.
+    congruence.
 Qed.
 
 (** Decidability of the literal boolean equality *)
@@ -83,6 +96,14 @@ Proof.
   induction l.
   + auto.
   + auto.
+Qed.
+
+Lemma asg_eq_dec:
+  forall (a1 a2:assignment),
+  {a1 = a2} + {a1 <> a2}.
+Proof.
+  decide equality.
+  apply lit_eqb_dec.
 Qed.
 
 (** Evaluation of a clause for a given assignment *)
@@ -109,6 +130,24 @@ Proof.
   induction c.
   + auto.
   + simpl. apply IHc; reflexivity.
+Qed.
+
+Lemma eval_clause_in l c a :
+  In l c ->
+  In l a ->
+  eval_clause c a = true.
+Proof.
+  induction c as [| l' c]; auto.
+  inversion 1; subst; cbn; rewrite Bool.orb_true_iff; auto.
+  intros. rewrite existsb_exists. left. eexists. rewrite lit_eqb_eq. eauto.
+Qed.
+
+Lemma eval_clause_weaken l c a :
+  eval_clause c a = true ->
+  eval_clause c (l :: a) = true.
+Proof.
+  revert a l. induction c; auto. intros *. cbn.
+  rewrite !Bool.orb_true_iff. intros [?|?]; auto.
 Qed.
 
 Notation "[| p | e |]" := (eval p e).

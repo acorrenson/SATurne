@@ -66,3 +66,23 @@ Proof.
   apply Nat.add_le_mono; try lia.
   apply remove_lit_variant.
 Qed.
+
+Lemma eval_clause_remove_neg l c a :
+  ~ In l c ->
+  eval_clause (remove_lit (lit_neg l) c) a = true ->
+  eval_clause c (l :: a) = true.
+Proof.
+  revert a l. induction c as [ |l' c]; auto.
+  intros a l Hin Ha. cbn in Ha. destruct (lit_eqb l' (lit_neg l)) eqn:HH.
+  - rewrite lit_eqb_eq in HH. subst. cbn. rewrite !Bool.orb_true_iff.
+    right. apply eval_clause_weaken; auto.
+  - cbn. rewrite !Bool.orb_true_iff. cbn in Ha. rewrite Bool.orb_true_iff in Ha.
+    destruct Ha as [?|Ha]; auto. destruct (lit_eqb l' l) eqn:Hll'; auto.
+    right. apply IHc; auto. intro. apply Hin; right; auto.
+Qed.
+
+Lemma existsb_lit_notin l c : existsb (lit_eqb l) c = false -> ~ In l c.
+Proof.
+  intros ? ?. enough (existsb (lit_eqb l) c = true) by congruence.
+  apply existsb_exists. eexists; split; eauto. apply lit_eqb_eq; auto.
+Qed.
