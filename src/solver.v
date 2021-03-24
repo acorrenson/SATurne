@@ -54,40 +54,48 @@ Proof.
   - destruct (propagate_variant l pp); lia.
 Defined.
 
-Lemma asg_eq_dec:
-  forall (a1 a2:assignment),
-  {a1 = a2} + {a1 <> a2}.
+Lemma propagate_correct a l p:
+  [| propagate l p | a |] = true ->
+  [| p | l :: a |] = true.
 Proof.
-  decide equality.
-  apply lit_eqb_dec.
+  revert a l. induction p as [ | c p IHp]; auto; cbn.
+  intros a l Ha. destruct (existsb (lit_eqb l) c) eqn:HH.
+  - apply existsb_exists in HH. destruct HH as [l' [? ->%lit_eqb_eq]].
+    rewrite Bool.andb_true_iff. apply IHp in Ha. split; auto.
+    eapply eval_clause_in; eauto. constructor; auto.
+  - rewrite Bool.andb_true_iff. cbn in Ha. rewrite Bool.andb_true_iff in Ha.
+    destruct Ha as [He Hp]. split; eauto. apply eval_clause_remove_neg; auto.
+    now apply existsb_lit_notin.
 Qed.
-
-Lemma resolve_invariant_1:
-  forall c p a,
-  In a (resolve (c :: p)) -> eval_clause c a = true.
-Proof.
-  intros c p asg H.
-  induction c; auto.
-  simpl.
-  apply Bool.orb_true_iff.
-  destruct (in_dec asg_eq_dec asg (resolve (c :: p))).
-  + right. apply (IHc i).
-Admitted.
-
-Lemma resolve_invariant_2:
-  forall c p a,
-  In a (resolve (c::p)) -> In a (resolve p).
-Proof.
-Admitted.
 
 Lemma resolve_correct:
   forall (a:assignment) (p:problem),
   List.In a (resolve p) -> eval p a = true.
 Proof.
-  induction p; intros; try auto; simpl.
-  apply andb_true_intro; split.
-  - apply (resolve_invariant_1 _ _ _ H).
-  - apply (IHp (resolve_invariant_2 _ _ _ H)).
+  intros *. revert p a.
+  refine (resolve_ind (fun _ _ => _) _ _ _).
+  { intros ? ->. auto. }
+  { intros * -> ->. auto. }
+  intros * -> * -> p1 p2 H1 s1 H2 s2 a HIn. cbn.
+  rewrite Bool.andb_true_iff, Bool.orb_true_iff.
+  rewrite resolve_equation, in_app_iff in HIn. destruct HIn as [HIn|HIn].
+  { apply in_map_iff in HIn. destruct HIn as [a' [<- HIn]]. fold p1 in HIn.
+    specialize (H1 _ HIn). cbn. clear s1 H2 s2 p2. subst p1.
+    rewrite Bool.orb_true_iff. rewrite lit_eqb_eq; split; auto.
+    apply propagate_correct; auto. }
+  { apply in_map_iff in HIn. destruct HIn as [a' [<- HIn]]. fold p2 in HIn.
+    specialize (H2 _ HIn). clear s1 H1 s2 p1. subst p2. cbn.
+    rewrite Bool.orb_true_iff. rewrite lit_eqb_eq. cbn in H2.
+    destruct (existsb (lit_eqb (lit_neg l)) cc) eqn:Hlcc.
+    { split. 2: now apply propagate_correct.
+      destruct (existsb (lit_eqb l) a') eqn:?; auto. right.
+      apply existsb_exists in Hlcc. destruct Hlcc as [? [? <-%lit_eqb_eq]].
+      apply (eval_clause_in (lit_neg l)); auto. now constructor. }
+    { rewrite lit_neg_twice in H2. cbn in H2. rewrite Bool.andb_true_iff in H2.
+      destruct H2 as [? ?]. split. 2: now apply propagate_correct.
+      destruct (existsb (lit_eqb l) a') eqn:?; auto. right.
+      apply existsb_lit_notin in Hlcc. apply existsb_lit_notin in Heqb.
+      eapply eval_clause_remove_neg; auto. now rewrite lit_neg_twice. } }
 Qed.
 
 Lemma resolve_complete:
