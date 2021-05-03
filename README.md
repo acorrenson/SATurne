@@ -2,7 +2,7 @@
 
 # SATurne
 
-**SATurne** is a simple functional style SAT solver written in [Coq](https://coq.inria.fr/). Its design is strongly inspired by [this article](http://www.cse.chalmers.se/~algehed/blogpostsHTML/SAT.html). It is a tiny solver absolutely not designed for performances or scalability, but its minimalist functional structure makes him relatively easy to manipulate inside Coq. The opportunity was so beautiful so I decided to provide a verified implementation of this solver.
+**SATurne** is a simple functional style SAT solver written in [Coq](https://coq.inria.fr/). Its design is strongly inspired by [this article](https://web.archive.org/web/20201109101535/http://www.cse.chalmers.se/~algehed/blogpostsHTML/SAT.html). It is a tiny solver absolutely not designed for performances or scalability, but its minimalist functional structure makes him relatively easy to manipulate inside Coq. The opportunity was so beautiful so I decided to provide a verified implementation of this solver.
 
 ## Using this mini solver
 
