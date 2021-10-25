@@ -226,6 +226,14 @@ Proof.
   + destruct (Literal.eval m a); auto.
 Qed.
 
+Lemma eval_app :
+  forall c1 c2 m, eval m (c1 ++ c2) = (eval m c1 || eval m c2)%bool.
+Proof.
+  intros.
+  induction c1; simpl; auto.
+  now destruct (Literal.eval m a) eqn:E.
+Qed.
+
 Lemma eqb_equiv :
   forall c1 c2, eqb c1 c2 = true -> forall m, eval m c1 = true <-> eval m c2 = true.
 Proof.
@@ -289,6 +297,14 @@ Fixpoint eval (m : Model.t) (cs : t) : bool :=
   | [] => true
   | c::cs => (Clause.eval m c && eval m cs)%bool
   end.
+
+Lemma eval_app :
+  forall c1 c2 m, eval m (c1 ++ c2) = (eval m c1 && eval m c2)%bool.
+Proof.
+  intros.
+  induction c1; simpl; auto.
+  destruct (Clause.eval m a) eqn:E; auto.
+Qed.
 
 Lemma eval_true_forall :
   forall cs m, eval m cs = true -> forall c, mem cs c = true -> Clause.eval m c = true.
