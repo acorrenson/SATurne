@@ -469,3 +469,10 @@ Lemma is_proof_sound :
 Proof.
   eauto using resolvent_seq_sound, is_proof_sound'.
 Qed.
+
+Theorem resolvent_seq_bot_unsat :
+  forall cs, resolvent_seq cs [] -> unsat cs.
+Proof.
+  intros cs Hres [m Hm].
+  now pose proof (resolvent_seq_sound cs _ m Hres Hm).
+Qed.
