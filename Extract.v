@@ -1,4 +1,4 @@
 From Coq Require Import Extraction ExtrOcamlNatInt.
-From SATurn Require Import Clauses.
+From SATurn Require Import Proof.
 
-Extraction "is_proof" is_proof.
+Extraction "proof_check" is_proof.
