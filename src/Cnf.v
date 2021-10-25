@@ -1,3 +1,19 @@
+(****************************************************
+
+                    ,MMM8&&&.
+                _..MMMMM88&&&&..._
+            .::'''MMMMM88&&&&&&'''::.
+           ::     MMMMM88&&&&&&     ::
+           '::....MMMMM88&&&&&&....::'
+              `''''MMMMM88&&&&''''`
+                    'MMM8&&&'
+
+                     SATurne
+                ----------------
+             A tiny verified solver
+
+****************************************************)
+
 From Coq Require Import List.
 Require Import Clauses.
 Import ListNotations.
