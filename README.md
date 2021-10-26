@@ -2,55 +2,38 @@
 
 # SATurne
 
-**SATurne** is a simple functional style SAT solver written in [Coq](https://coq.inria.fr/). Its design is strongly inspired by [this article](https://web.archive.org/web/20201109101535/http://www.cse.chalmers.se/~algehed/blogpostsHTML/SAT.html). It is a tiny solver absolutely not designed for performances or scalability, but its minimalist functional structure makes him relatively easy to manipulate inside Coq. The opportunity was so beautiful so I decided to provide a verified implementation of this solver.
+*A purely functional verified SAT solver which produces proofs*
 
-## Using this mini solver
+**SATurne** is a simple purely functional SAT solver written and verified in [Coq](https://coq.inria.fr/). It's a tiny solver absolutely not designed for performances nor scalability. It is, however, intended to be well-documented, easy to understand and extremely trustworthy.
 
-**SATurne** takes as input formulas of the propositional logic in conjunctive normal form and outputs a list of possible assignments. If the problem is unsatisfiable, the output list is empty. Propositions are expressed as natural numbers.
+**SATurne** is progressively integrated as the SAT solver behind the [Modulus](https://github.com/jdrprod/Modulus) SMT solver.
 
-The signature of the `resolve` function is :
-```coq
-resolve : list list literal -> list list literal
-```
+## Few words on SATurn design
 
-where a `literal` is either `Pos n` or `Neg n` and `n` is of type `nat`.
-Lists of the output describe literals that should be true to solve the problem.
-For instance, the output `[[Pos 1]; [Pos 2]]` means that a solution to the problem is to set the first variable to **true**, and all the others to **false** or to set the second variable to **true** and all the others to **false**.
+At it's core, **SATurne** is a ridiculously simple solver very similar to the one described in
+[this article](https://web.archive.org/web/20201109101535/http://www.cse.chalmers.se/~algehed/blogpostsHTML/SAT.html).
 
-## Loading the Coq module
+## Features
 
-The sources are located in the `src` folder. A `_CoqProject` and a makefile are provided. Simply type `make` in the `src` folder and SATurne is ready to be loaded in your favorite Coq editor.
+**SATurne** is not only a solver. It is also a collection of Coq theories formalizing the boolean logic and the associated proof systems (e.g. the resolution system).
 
-## An example
+**SATurne** is shipped with a proof checker to check proofs of unsatisfiability based on the resolution system. This checker is proven to be correct and can be extracted to a self contained OCaml module.
 
-Let's consider the following SAT problem :
+Since SATurne solve only formulas in clausal form, it also features a verified CNF converter.
 
-```
-A /\ B /\ C
-C -> not B
-```
+## Coq Sources
 
-We first convert it into CNF which 
-gives 
+The sources are located in the `src` folder. A `_CoqProject` and a makefile are provided. Simply type `make` at the project root SATurne is ready to be loaded in your favorite Coq editor.
+
+### Structure/TODOs
 
 ```
-{{A}, {B}, {C}, {not C, not B}}
+src/
+  Clauses.v     -> Theories of literals, clauses and set of clauses
+  Cnf.v         -> conversion into cnf
+  Proof.v       -> proof checker
+  Evaluation.v  -> (old) models in boolean logic
+  Sat.v         -> (old) facts about satisfiability
+  Solver_aux.v  -> (old) useful facts used to prove the solver
+  Solver.v      -> (old) verified solver
 ```
-
-Renaming `A`, `B`, and `C` as `1`, `2` and `3`, it gives an input for the solver :
-
-```
-Compute (resolve [[Pos 1]; [Pos 2]; [Pos 3]; [Neg 3; Neg 2]]).
-```
-
-Which naturally outputs `[]` since this problem is unsatisfiable.
-
-## Project status
-
-+ [x] core algorithm
-+ [x] termination proof
-+ [ ] correctness proof (this is really not trivial, any help is welcomed :) )
-
-
-
-
