@@ -14,7 +14,7 @@
 
 ****************************************************)
 
-From Coq Require Import List.
+From Coq Require Import List Arith PeanoNat Lia.
 Require Import Clauses.
 Import ListNotations.
 
@@ -36,6 +36,38 @@ Fixpoint eval (m : Model.t) (f : t) : bool :=
   | Neg f   => negb (eval m f)
   | Atom a  => Model.satisfy m a
   end.
+
+Fixpoint negvar (f : t) : t :=
+  match f with
+  | And f1 f2 => And (negvar f1) (negvar f2)
+  | Or f1 f2 => Or (negvar f1) (negvar f2)
+  | Neg f => Neg (negvar f)
+  | Atom a => Neg (Atom a)
+  end.
+
+Definition fmodel := nat -> bool.
+
+Fixpoint fsatisfy (m : fmodel) (f : t) : bool :=
+  match f with
+  | And f1 f2 => fsatisfy m f1 && fsatisfy m f2
+  | Or f1 f2 => fsatisfy m f1 || fsatisfy m f2
+  | Neg f => negb (fsatisfy m f)
+  | Atom a => m a
+  end.
+
+Definition inv (m : fmodel) : fmodel :=
+  fun x => negb (m x).
+
+Theorem negvar_sat :
+  forall f m, fsatisfy m f = fsatisfy (inv m) (negvar f).
+Proof.
+  intros; induction f; simpl.
+  + now rewrite IHf1, IHf2.
+  + now rewrite IHf1, IHf2.
+  + now rewrite IHf.
+  + unfold inv.
+    now rewrite Bool.negb_involutive.
+Qed.
 
 End LProp.
 
@@ -165,4 +197,52 @@ Proof.
   reflexivity.
 Qed.
 
+Import LProp.
+
+Notation P := (Atom 1).
+Notation Q := (Atom 2).
+Notation R := (Atom 3).
+
+Compute (cnf (Impl (Impl Q P) (And (Neg P) (And Q R)))).
+
 End Cnf.
+
+Module Subst.
+
+Declare Scope loc.
+Delimit Scope loc with loc.
+
+Inductive location : Type :=
+  | There : location
+  | Left : location -> location
+  | Right : location -> location.
+
+Inductive substitute : LProp.t -> LProp.t -> location -> LProp.t -> Prop :=
+  | subst_there H F :
+    substitute H F There F
+  | subst_and_l H1 H1' H2 F l :
+    substitute H1 F l H1' ->
+    substitute (LProp.And H1 H2) F (Left l) (LProp.And H1' H2)
+  | subst_and_r H1 H2 H2' F l :
+    substitute H2 F l H2' ->
+    substitute (LProp.And H1 H2) F (Right l) (LProp.And H1 H2')
+  | subst_or_l H1 H1' H2 F l :
+    substitute H1 F l H1' ->
+    substitute (LProp.Or H1 H2) F (Left l) (LProp.Or H1' H2)
+  | subst_or_r H1 H2 H2' F l :
+    substitute H2 F l H2' ->
+    substitute (LProp.Or H1 H2) F (Right l) (LProp.Or H1 H2')
+  | subst_neg H H' F l :
+    substitute H F l H' ->
+    substitute (LProp.Neg H) F (Left l) (LProp.Neg H').
+#[export] Hint Constructors substitute : core.
+
+Import LProp.
+
+Example test :
+  substitute (And (And (Atom 1) (Atom 2)) (Atom 3)) (Atom 4) (Left (Left There)) (And (And (Atom 4) (Atom 2)) (Atom 3)).
+Proof.
+  auto.
+Qed.
+
+End Subst.

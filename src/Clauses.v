@@ -53,6 +53,16 @@ Qed.
 Definition sub_model (m1 m2 : t) : bool :=
   List.forallb (satisfy m2) m1.
 
+Lemma sub_model_agree :
+  forall m1 m2 n, sub_model m1 m2 = true ->
+    satisfy m1 n = true -> satisfy m2 n = true.
+Proof.
+  induction m1; try easy; simpl.
+  intros m2 n [H1 H2]%Bool.andb_true_iff.
+  destruct (a =? n) eqn:E; auto.
+  now apply beq_nat_true in E as ->.
+Qed.
+
 Lemma sub_model_refl :
   forall m, sub_model m m = true.
 Proof.

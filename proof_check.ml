@@ -88,9 +88,9 @@ let is_proof_step context = function
 
 (** val is_proof : ClauseSet.t -> proof_step list -> Clause.t -> bool **)
 
-let rec is_proof context uts c =
-  match uts with
+let rec is_proof context proof c =
+  match proof with
   | [] -> ClauseSet.mem context c
-  | ut :: uts0 ->
-    (&&) (is_proof_step context ut)
-      (is_proof ((conclusion ut) :: context) uts0 c)
+  | ps :: proof0 ->
+    (&&) (is_proof_step context ps)
+      (is_proof ((conclusion ps) :: context) proof0 c)
