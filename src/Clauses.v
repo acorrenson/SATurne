@@ -20,72 +20,8 @@
 ****************************************************)
 
 From Coq Require Import Arith List ListSet.
+From SATurn Require Import Model.
 Import ListNotations.
-
-Module Model.
-
-Definition t := list nat.
-
-Fixpoint satisfy (m : t) (n : nat) :=
-  match m with
-  | [] => false
-  | x::xs =>
-    if x =? n then true
-    else satisfy xs n
-  end.
-
-Lemma In_satisfy :
-  forall m n, In n m <-> satisfy m n = true.
-Proof.
-  intros.
-  induction m.
-  - split; inversion 1.
-  - split; inversion 1; subst; simpl.
-    + now rewrite Nat.eqb_refl.
-    + destruct (a =? n); auto.
-      now apply IHm.
-    + destruct (a =? n) eqn:E.
-      * apply Nat.eqb_eq in E; subst.
-        now left.
-      * firstorder.
-Qed.
-
-Definition sub_model (m1 m2 : t) : bool :=
-  List.forallb (satisfy m2) m1.
-
-Lemma sub_model_agree :
-  forall m1 m2 n, sub_model m1 m2 = true ->
-    satisfy m1 n = true -> satisfy m2 n = true.
-Proof.
-  induction m1; try easy; simpl.
-  intros m2 n [H1 H2]%Bool.andb_true_iff.
-  destruct (a =? n) eqn:E; auto.
-  now apply beq_nat_true in E as ->.
-Qed.
-
-Lemma sub_model_refl :
-  forall m, sub_model m m = true.
-Proof.
-  induction m; simpl; auto.
-  unfold sub_model in *.
-  rewrite forallb_forall in IHm.
-  rewrite Nat.eqb_refl; simpl.
-  apply forallb_forall; intros.
-  destruct (a =? x); auto.
-Qed.
-
-Definition eqb (m1 m2 : t) : bool :=
-  sub_model m1 m2 && sub_model m2 m1.
-
-Lemma eq_eqb :
-  forall m1 m2, m1 = m2 -> eqb m1 m2 = true.
-Proof.
-  intros m _ <-.
-  unfold eqb.
-  now rewrite sub_model_refl.
-Qed.
-
-End Model.
 
 
 Module Literal.
@@ -139,59 +75,55 @@ Qed.
 
 Definition eval (m : Model.t) (l : t) : bool :=
   match l with
-  | Pos n => Model.satisfy m n
-  | Neg n => negb (Model.satisfy m n)
+  | Pos n => Model.get m n
+  | Neg n => negb (Model.get m n)
   end.
 
 End Literal.
+
 
 Module Clause.
 
 Definition t : Type := list Literal.t.
 
-Fixpoint mem (c : t) (l : Literal.t) : bool :=
-  match c with
-  | [] => false
-  | l'::ls =>
-    if Literal.eqb l l' then true
-    else mem ls l
-  end.
+Definition mem (c : t) (l : Literal.t) : bool :=
+  List.existsb (Literal.eqb l) c.
 
 Lemma In_mem :
   forall l c, In l c <-> mem c l = true.
 Proof.
   intros l c.
-  induction c.
-  - split; inversion 1.
-  - split; intros.
-    + induction H; subst; simpl.
-      * now rewrite Literal.eqb_refl.
-      * destruct Literal.eqb; auto.
-        now rewrite <- IHc.
-    + simpl in H.
-      destruct Literal.eqb eqn:E; auto.
-      * rewrite (proj1 (Literal.eqb_eq _ _) E).
-        now left.
-      * right.
-        apply ((proj2 IHc) H).
+  split; [ intros | intros [l' [H1 ->%Literal.eqb_eq]]%existsb_exists]; auto.
+  apply existsb_exists.
+  eauto using Literal.eqb_refl.
 Qed.
+#[global]
+Hint Resolve In_mem : core.
 
 Definition sub_clause (c1 c2 : t) : bool :=
-  List.forallb (mem c1) c2.
+  List.forallb (mem c2) c1.
 
 Lemma sub_clause_refl :
   forall c, sub_clause c c = true.
 Proof.
   induction c as [ | l c IHc]; auto.
-  apply forallb_forall; intros.
-  inversion H; subst; simpl.
-  - now rewrite Literal.eqb_refl.
-  - destruct Literal.eqb; auto.
-    now apply In_mem.
+  apply forallb_forall.
+  intros x [-> | H]; simpl.
+  + now rewrite Literal.eqb_refl.
+  + rewrite (proj1 (In_mem _ _) H); intuition.
 Qed.
 
 Definition eqb (c1 c2 : t) : bool :=
   sub_clause c1 c2 && sub_clause c2 c1.
+
+Lemma eqb_refl :
+  forall c, eqb c c = true.
+Proof.
+  intros c.
+  apply Bool.andb_true_iff; auto using sub_clause_refl.
+Qed.
+#[global]
+Hint Resolve eqb_refl : core.
 
 Lemma eq_eqb :
   forall c1 c2, c1 = c2 -> eqb c1 c2 = true.
@@ -208,32 +140,24 @@ Proof.
   now rewrite (eq_eqb c1 c1 (eq_refl)) in Heq.
 Qed.
 
-Fixpoint eval (m : Model.t) (c : t) :=
-  match c with
-  | [] => false
-  | x::xs =>
-    if Literal.eval m x then true
-    else eval m xs
-  end.
+Definition eval (m : Model.t) (c : t) :=
+  existsb (Literal.eval m) c.
 
-Lemma eval_true_exists :
-  forall c m, eval m c = true -> exists x, In x c /\ Literal.eval m x = true.
+Lemma eval_true_iff :
+  forall c m, eval m c = true <-> exists x, In x c /\ Literal.eval m x = true.
 Proof.
-  intros c m H.
-  induction c; try easy.
-  simpl in H.
-  destruct (Literal.eval m a) eqn:E;
-  firstorder.
+  intros c m; split.
+  + intros [x [H1 H2]]%existsb_exists. firstorder.
+  + intros [x [Hx Heval]]. apply existsb_exists. firstorder.
 Qed.
 
-Lemma exists_eval_true :
-  forall c m, (exists x, In x c /\ Literal.eval m x = true) -> eval m c = true.
+Lemma eval_false_iff :
+  forall c m, eval m c = false <-> forall x, In x c -> Literal.eval m x = false.
 Proof.
-  intros c m [x [Hx Heval]].
-  induction c; auto.
-  destruct Hx; subst; simpl.
-  + now rewrite Heval.
-  + destruct (Literal.eval m a); auto.
+  intros c m; split.
+  + induction c; try easy; simpl in *.
+    intros [H1 H2]%Bool.orb_false_iff x [-> | Hx]; auto.
+  + induction c; try easy; simpl; intuition.
 Qed.
 
 Lemma eval_app :
@@ -244,37 +168,25 @@ Proof.
   now destruct (Literal.eval m a) eqn:E.
 Qed.
 
+Lemma sub_clause_in :
+  forall c1 c2 l, sub_clause c1 c2 = true -> In l c1 -> In l c2.
+Proof.
+  intros c1 c2 l Hsub Hin. unfold sub_clause in Hsub.
+  rewrite forallb_forall in Hsub.
+  firstorder using In_mem.
+Qed.
+
 Lemma eqb_equiv :
-  forall c1 c2, eqb c1 c2 = true -> forall m, eval m c1 = true <-> eval m c2 = true.
+  forall c1 c2 m, eqb c1 c2 = true -> eval m c1 = eval m c2.
 Proof.
-  intros c1 c2 [H1 H2]%Bool.andb_true_iff m.
-  unfold sub_clause in *; split; intros.
-  all:
-    apply eval_true_exists in H as [l [Hin Heval]];
-    apply exists_eval_true; exists l;
-    rewrite forallb_forall in H1, H2;
-    firstorder using In_mem.
-Qed.
-
-Lemma eqb_equiv' :
-  forall c1 c2, eqb c1 c2 = true -> forall m, eval m c1 = false <-> eval m c2 = false.
-Proof.
-  intros c1 c2 H m; split; intros.
-  + assert (~(eval m c1 = true)) by now destruct (eval m c1).
-    destruct (eval m c2) eqn:E; auto.
-    firstorder using eqb_equiv.
-  + assert (~(eval m c2 = true)) by now destruct (eval m c2).
-    destruct (eval m c1) eqn:E; auto.
-    firstorder using eqb_equiv.
-Qed.
-
-Lemma eqb_eval_eq :
-  forall c1 c2, eqb c1 c2 = true -> forall m, eval m c1 = eval m c2.
-Proof.
-  intros.
+  intros c1 c2 m.
   destruct (eval m c1) eqn:E.
-  + now rewrite (eqb_equiv c1 c2 H m) in E.
-  + now rewrite (eqb_equiv' c1 c2 H m) in E.
+  + apply eval_true_iff in E as [x [Hx1 Hx2]].
+    intros [H1%(sub_clause_in _ _ x) H2%(sub_clause_in _ _ x)]%Bool.andb_true_iff; auto.
+    symmetry. apply eval_true_iff. firstorder.
+  + pose proof (proj1 (eval_false_iff c1 m) E).
+    intros [H1 H2]%Bool.andb_true_iff.
+    symmetry. apply eval_false_iff. firstorder using sub_clause_in.
 Qed.
 
 End Clause.
@@ -284,29 +196,18 @@ Module ClauseSet.
 
 Definition t := list Clause.t.
 
-Fixpoint mem (cs : t) (c : Clause.t) : bool :=
-  match cs with
-  | [] => false
-  | c'::cs' =>
-    if Clause.eqb c c' then true
-    else mem cs' c
-  end.
+Definition mem (cs : t) (c : Clause.t) : bool :=
+  existsb (Clause.eqb c) cs.
 
 Lemma In_mem :
   forall cs c, In c cs -> mem cs c = true.
 Proof.
-  intros cs c Hccs.
-  induction cs; simpl; auto.
-  destruct Clause.eqb eqn:E; auto.
-  apply Clause.eqb_false in E.
-  destruct Hccs; auto.
+  intros cs c Hin.
+  apply existsb_exists; eauto.
 Qed.
 
-Fixpoint eval (m : Model.t) (cs : t) : bool :=
-  match cs with
-  | [] => true
-  | c::cs => (Clause.eval m c && eval m cs)%bool
-  end.
+Definition eval (m : Model.t) (cs : t) : bool :=
+  forallb (Clause.eval m) cs.
 
 Lemma eval_app :
   forall c1 c2 m, eval m (c1 ++ c2) = (eval m c1 && eval m c2)%bool.
@@ -316,19 +217,27 @@ Proof.
   destruct (Clause.eval m a) eqn:E; auto.
 Qed.
 
-Lemma eval_true_forall :
-  forall cs m, eval m cs = true -> forall c, mem cs c = true -> Clause.eval m c = true.
+Lemma eval_true_iff :
+  forall cs m, eval m cs = true <-> forall c, ClauseSet.mem cs c = true -> Clause.eval m c = true.
 Proof.
-  intros cs m H c Hc.
-  induction cs; try easy.
-  simpl in H.
-  destruct (Clause.eval m a) eqn:E; simpl in H; try easy.
-  simpl in Hc.
-  destruct (Clause.eqb c a) eqn:E'.
-  + eapply Clause.eqb_equiv.
-    apply E'.
-    apply E.
-  + firstorder.
+  intros cs m. split.
+  + induction cs; try easy; simpl in *.
+    intros [H1 H2]%Bool.andb_true_iff c [H | H]%Bool.orb_true_iff; auto.
+    now rewrite (Clause.eqb_equiv _ a).
+  + intros. apply forallb_forall.
+    intros x Hx%In_mem.
+    firstorder.
+Qed.
+
+Lemma eval_false_iff :
+  forall cs m, eval m cs = false <-> exists c, In c cs /\ Clause.eval m c = false.
+Proof.
+  intros cs m; split.
+  + induction cs; try easy.
+    intros [H1 | H2]%Bool.andb_false_iff; firstorder.
+  + induction cs; [ intros [c [[] _]] | intros [c [[->|Hc] Heval]]]; simpl.
+    * now rewrite Heval.
+    * apply Bool.andb_false_iff. firstorder.
 Qed.
 
 Definition sat (cs : ClauseSet.t) :=

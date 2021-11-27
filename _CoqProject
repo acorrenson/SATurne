@@ -1,4 +1,5 @@
 -R ./src SATurn
+./src/Model.v
 ./src/Evaluation.v
 ./src/Clauses.v
 ./src/Proof.v

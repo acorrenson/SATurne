@@ -34,7 +34,7 @@ Fixpoint eval (m : Model.t) (f : t) : bool :=
   | And f1 f2  => (eval m f1 && eval m f2)%bool
   | Or f1 f2   => (eval m f1 || eval m f2)%bool
   | Neg f   => negb (eval m f)
-  | Atom a  => Model.satisfy m a
+  | Atom a  => Model.get m a
   end.
 
 Fixpoint negvar (f : t) : t :=
@@ -45,27 +45,14 @@ Fixpoint negvar (f : t) : t :=
   | Atom a => Neg (Atom a)
   end.
 
-Definition fmodel := nat -> bool.
-
-Fixpoint fsatisfy (m : fmodel) (f : t) : bool :=
-  match f with
-  | And f1 f2 => fsatisfy m f1 && fsatisfy m f2
-  | Or f1 f2 => fsatisfy m f1 || fsatisfy m f2
-  | Neg f => negb (fsatisfy m f)
-  | Atom a => m a
-  end.
-
-Definition inv (m : fmodel) : fmodel :=
-  fun x => negb (m x).
-
 Theorem negvar_sat :
-  forall f m, fsatisfy m f = fsatisfy (inv m) (negvar f).
+  forall f m, eval m f = eval (Model.inv m) (negvar f).
 Proof.
   intros; induction f; simpl.
   + now rewrite IHf1, IHf2.
   + now rewrite IHf1, IHf2.
   + now rewrite IHf.
-  + unfold inv.
+  + unfold Model.inv, Model.get.
     now rewrite Bool.negb_involutive.
 Qed.
 

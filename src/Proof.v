@@ -25,7 +25,8 @@ Lemma mem_entails :
   forall cs c, ClauseSet.mem cs c = true -> entails cs c.
 Proof.
   intros cs c Hmem m Hm.
-  firstorder using ClauseSet.eval_true_forall.
+  eapply ClauseSet.eval_true_iff; eauto.
+  Check ClauseSet.In_mem.
 Qed.
 
 Lemma resolution :
@@ -39,7 +40,7 @@ Proof.
   specialize (H1 _ Hm); specialize (H2 _ Hm).
   destruct l1, l2; simpl in *; try easy.
   all: replace n0 with n in * by congruence.
-  all: destruct (Model.satisfy m n) eqn:E; simpl in *.
+  all: destruct (Model.get m n) eqn:E; simpl in *.
   all: rewrite Clause.eval_app; intuition.
 Qed.
 
@@ -55,12 +56,12 @@ Require Import Evaluation.
 
 Theorem clause_set_clause_true :
   forall m cs c,
-    ClauseSet.mem cs c = true ->
     ClauseSet.eval m cs = true ->
+    ClauseSet.mem cs c = true ->
     Clause.eval m c = true.
 Proof.
-  intros m cs c Hmem Heval.
-  firstorder using ClauseSet.eval_true_forall.
+  intros m cs c Heval Hmem.
+  now apply (ClauseSet.eval_true_iff cs).
 Qed.
 
 Theorem resolvent_sound :
@@ -70,7 +71,7 @@ Theorem resolvent_sound :
 Proof.
   intros cs c Hres.
   induction Hres as [ cs c Hmem | cs c1 c2 l1 l2 H1%mem_entails H2%mem_entails].
-  + firstorder using ClauseSet.eval_true_forall.
+  + intros H Hm. eauto using clause_set_clause_true.
   + eauto using resolution.
 Qed.
 

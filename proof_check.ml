@@ -10,6 +10,12 @@ module Nat =
  struct
  end
 
+(** val existsb : ('a1 -> bool) -> 'a1 list -> bool **)
+
+let rec existsb f = function
+| [] -> false
+| a :: l0 -> (||) (f a) (existsb f l0)
+
 (** val forallb : ('a1 -> bool) -> 'a1 list -> bool **)
 
 let rec forallb f = function
@@ -40,15 +46,13 @@ module Clause =
 
   (** val mem : t -> Literal.t -> bool **)
 
-  let rec mem c l =
-    match c with
-    | [] -> false
-    | l' :: ls -> if Literal.eqb l l' then true else mem ls l
+  let mem c l =
+    existsb (Literal.eqb l) c
 
   (** val sub_clause : t -> t -> bool **)
 
   let sub_clause c1 c2 =
-    forallb (mem c1) c2
+    forallb (mem c2) c1
 
   (** val eqb : t -> t -> bool **)
 
@@ -62,10 +66,8 @@ module ClauseSet =
 
   (** val mem : t -> Clause.t -> bool **)
 
-  let rec mem cs c =
-    match cs with
-    | [] -> false
-    | c' :: cs' -> if Clause.eqb c c' then true else mem cs' c
+  let mem cs c =
+    existsb (Clause.eqb c) cs
  end
 
 type proof_step =
