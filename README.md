@@ -1,8 +1,15 @@
-![logo](planet.png)
+<div align="center">
+
+<p>
+    <img width="80%" src="planet.png" alt="SATurne">
+</p>
 
 # SATurne
 
 *A purely functional verified SAT solver which produces proofs*
+
+</div>
+
 
 **SATurne** is a simple purely functional SAT solver written and verified in [Coq](https://coq.inria.fr/). It's a tiny solver absolutely not designed for performances nor scalability. It is, however, intended to be well-documented, easy to understand and extremely trustworthy.
 
